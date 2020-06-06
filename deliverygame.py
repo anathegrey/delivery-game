@@ -7,7 +7,9 @@ from tabulate import tabulate
 n_sim = 10000
 
 n_days = 120
-    
+
+global accept
+
 compensation = [0.0, 0.5, 1.0, 1.5, 1.8]
 acceptance = [0.01, 0.25, 0.5, 0.6, 0.75]
 
@@ -57,6 +59,10 @@ def simulate():
     daily_deliveries_oc = 0
     daily_deliveries_lckr = 0
 
+    accept = 0
+    if accept == 5:
+        accept = 0
+
     left_home = 0
     left_lckr = 0
 
@@ -66,10 +72,6 @@ def simulate():
     status_lckr = 0
 
     acc_total_cost = 0
-
-    accept = 0
-    if accept == 5:
-        accept = 0
 
     new_acceptance = acceptance[accept]
 
@@ -127,7 +129,6 @@ def simulate():
         daily_deliveries_oc = deliver_oc_aux
         daily_deliveries_lckr = deliver_lckr_aux
         
-    accept = accept + 1
     print(tabulate(rows, headers=['DAY', 'NEW_HOME', 'NEW_LCKR', 'DEL_PF', 'DEL_OC', 'DEL_LOCKER', 'ACC_PF', 'ACC_OC', 'ACC_LCKR', 'c_PF', 'C_OC', 'C_ACC', 'STATUS_H', 'STATUS_L']))
     
 simulate()
