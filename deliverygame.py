@@ -1,17 +1,9 @@
 import random
 from tabulate import tabulate
-#import math
-#import scipy.stats
-
-
-n_sim = 10000
+import math
+import scipy.stats
 
 n_days = 120
-
-global accept
-
-compensation = [0.0, 0.5, 1.0, 1.5, 1.8]
-acceptance = [0.01, 0.25, 0.5, 0.6, 0.75]
 
 def delivery_place():
     place = random.randint(1,2) #where 1 - home delivery & 2 - locker delivery
@@ -45,23 +37,15 @@ def PF_total_cost(total_deliveries):
         elif i > 10:
             num_delivery = num_delivery + i * 2 
     return num_delivery
-
-#50/50 probabilidade entregue em casa e entregue em locker
-#desses 50% entregue em locker, 75% apanhado pelo OC, 25% apanhado pelo PF
-        
     
-def simulate():
+def simulate(new_acceptance, new_compensation):
     acc_deliveries_pf = 0
     acc_deliveries_oc = 0
     acc_deliveries_lckr = 0
-
+    
     daily_deliveries_pf = 0
     daily_deliveries_oc = 0
     daily_deliveries_lckr = 0
-
-    accept = 0
-    if accept == 5:
-        accept = 0
 
     left_home = 0
     left_lckr = 0
@@ -72,8 +56,6 @@ def simulate():
     status_lckr = 0
 
     acc_total_cost = 0
-
-    new_acceptance = acceptance[accept]
 
     rows = []
     
@@ -120,7 +102,7 @@ def simulate():
         acc_deliveries_oc = acc_deliveries_oc + daily_deliveries_oc
         acc_deliveries_lckr = acc_deliveries_lckr + daily_deliveries_lckr
 
-        daily_cost_oc = daily_deliveries_oc * compensation[accept]
+        daily_cost_oc = daily_deliveries_oc * new_compensation
         daily_cost_pf = PF_total_cost(daily_deliveries_pf)
         acc_total_cost = acc_total_cost + daily_cost_oc + daily_cost_pf
         
@@ -128,20 +110,42 @@ def simulate():
         daily_deliveries_pf = deliver_next_day
         daily_deliveries_oc = deliver_oc_aux
         daily_deliveries_lckr = deliver_lckr_aux
-        
-    print(tabulate(rows, headers=['DAY', 'NEW_HOME', 'NEW_LCKR', 'DEL_PF', 'DEL_OC', 'DEL_LOCKER', 'ACC_PF', 'ACC_OC', 'ACC_LCKR', 'c_PF', 'C_OC', 'C_ACC', 'STATUS_H', 'STATUS_L']))
-    
-simulate()
 
-'''
-def mean_confidence interval(data, alpha):
-    m = float(sum(data))/n_sim
-    var = sum([(x - m) ** 2 for x in data]) / float(n_sim - 1)
-    tfact = scipy.stats.t._ppf(1 - alpha/2., n_sim-1)
+    #print(tabulate(rows, headers=['DAY', 'NEW_HOME', 'NEW_LCKR', 'DEL_PF', 'DEL_OC', 'DEL_LOCKER', 'ACC_PF', 'ACC_OC', 'ACC_LCKR', 'c_PF', 'C_OC', 'C_ACC', 'STATUS_H', 'STATUS_L']))
+    return (acc_total_cost, status_lckr)
+    
+n_sim = 10000
+
+compensation = [0.0, 0.5, 1.0, 1.5, 1.8]
+acceptance = [0.01, 0.25, 0.5, 0.6, 0.75]
+
+costs = []
+max_items_lckr = []
+
+def run_simulate(new_acceptance, new_compensation):
+    for i in range(n_sim):            
+        (this_costs, this_max_items_lckr) = simulate(new_acceptance, new_compensation)
+        costs.append(this_costs)
+        max_items_lckr.append(this_max_items_lckr)
+    return (costs, max_items_lckr)
+
+def mean_confidence_interval(data, alpha):
+    n = len(data)
+    m = float(sum(data))/n
+    var = sum([(x - m) ** 2 for x in data]) / float(n - 1)
+    tfact = scipy.stats.t._ppf(1 - alpha/2., n-1)
     h = tfact * math.sqrt(var / n)
     return m-h, m+h
 
 if __name__ == "__main__":
     confidence = .99
     alpha = 1 - confidence
-'''
+    for i in range(len(acceptance)):
+        new_acceptance = acceptance[i]
+        new_compensation = compensation[i]
+        print("For acceptance {} with compensation {}...".format(new_acceptance, new_compensation))
+        (data_costs, data_max_items_lckr) = run_simulate(new_acceptance, new_compensation)
+        (min_costs, max_costs) = mean_confidence_interval(data_costs, alpha)
+        (min_lckr, max_lckr) = mean_confidence_interval(data_max_items_lckr, alpha)
+        print("The expected total cost is ({}, {})".format(min_costs, max_costs))
+        print("The expected maximum number of items stored in the locker is ({}, {})".format(min_lckr, max_lckr))
